@@ -1,0 +1,490 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Athletica — Order Manage</title>
+<style>
+    * { box-sizing: border-box; }
+
+    body {
+        margin: 0;
+        font-family: 'Poppins', Arial, sans-serif;
+        background: #f5f5f5;
+        color: #222;
+    }
+
+    .topbar {
+        background: #111;
+        color: #fff;
+        padding: 18px 24px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        flex-wrap: wrap;
+        gap: 12px;
+    }
+
+    .topbar h1 {
+        margin: 0;
+        font-size: 20px;
+    }
+
+    .topbar h1 span {
+        color: #ff523b;
+    }
+
+    .conn-status {
+        font-size: 12px;
+        color: #aaa;
+    }
+
+    .conn-status.online {
+        color: #4caf50;
+    }
+
+    .filters {
+        display: flex;
+        gap: 8px;
+        padding: 16px 24px 0;
+        flex-wrap: wrap;
+    }
+
+    .filter-btn {
+        border: 1px solid #ddd;
+        background: #fff;
+        color: #444;
+        padding: 6px 16px;
+        border-radius: 20px;
+        font-size: 13px;
+        cursor: pointer;
+        font-family: inherit;
+    }
+
+    .filter-btn.active {
+        background: #ff523b;
+        border-color: #ff523b;
+        color: #fff;
+    }
+
+    .container {
+        max-width: 900px;
+        margin: 0 auto;
+        padding: 16px 24px 60px;
+    }
+
+    .empty-state {
+        text-align: center;
+        color: #888;
+        padding: 60px 20px;
+        font-size: 14px;
+    }
+
+    .order-card {
+        background: #fff;
+        border-radius: 10px;
+        box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+        padding: 18px 20px;
+        margin-bottom: 14px;
+        border-left: 4px solid #ccc;
+    }
+
+    .order-card.status-pending {
+        border-left-color: #ff9800;
+    }
+
+    .order-card.status-confirmed {
+        border-left-color: #4caf50;
+    }
+
+    .order-card.status-cancelled {
+        border-left-color: #999;
+        opacity: 0.75;
+    }
+
+    .order-top {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        gap: 10px;
+        flex-wrap: wrap;
+    }
+
+    .order-buyer {
+        font-weight: 600;
+        font-size: 15px;
+    }
+
+    .order-buyer-email {
+        font-size: 12px;
+        color: #888;
+        font-weight: 400;
+    }
+
+    .order-status-badge {
+        font-size: 12px;
+        font-weight: 600;
+        padding: 4px 12px;
+        border-radius: 20px;
+        white-space: nowrap;
+        text-transform: uppercase;
+        letter-spacing: 0.3px;
+    }
+
+    .order-status-badge.status-pending {
+        background: #fff3e0;
+        color: #e65100;
+    }
+
+    .order-status-badge.status-confirmed {
+        background: #e8f5e9;
+        color: #2e7d32;
+    }
+
+    .order-status-badge.status-cancelled {
+        background: #eee;
+        color: #666;
+    }
+
+    .order-items {
+        margin-top: 10px;
+        font-size: 14px;
+        color: #333;
+    }
+
+    .order-meta {
+        margin-top: 8px;
+        font-size: 13px;
+        color: #555;
+        line-height: 1.6;
+    }
+
+    .order-meta strong {
+        color: #222;
+    }
+
+    .order-seller-note {
+        font-size: 12px;
+        color: #ff523b;
+        margin-top: 6px;
+    }
+
+    .proof-img {
+        max-width: 180px;
+        border-radius: 8px;
+        margin-top: 6px;
+        display: block;
+        cursor: zoom-in;
+        border: 1px solid #eee;
+    }
+
+    .order-actions {
+        margin-top: 14px;
+        display: flex;
+        gap: 10px;
+        flex-wrap: wrap;
+    }
+
+    .order-actions button {
+        border: none;
+        cursor: pointer;
+        font-family: inherit;
+        font-size: 13px;
+        padding: 8px 20px;
+        border-radius: 20px;
+        font-weight: 600;
+    }
+
+    .btn-approve {
+        background: #ff523b;
+        color: #fff;
+    }
+
+    .btn-approve:hover {
+        background: #e0452f;
+    }
+
+    .btn-decline, .btn-cancel {
+        background: #fff;
+        color: #c62828;
+        border: 1px solid #c62828 !important;
+    }
+
+    .btn-decline:hover, .btn-cancel:hover {
+        background: #ffebee;
+    }
+
+    .toast {
+        position: fixed;
+        bottom: 20px;
+        right: 20px;
+        background: #222;
+        color: #fff;
+        padding: 12px 20px;
+        border-radius: 8px;
+        font-size: 13px;
+        opacity: 0;
+        transform: translateY(10px);
+        transition: opacity 0.25s, transform 0.25s;
+        pointer-events: none;
+        z-index: 999;
+    }
+
+    .toast.show {
+        opacity: 1;
+        transform: translateY(0);
+    }
+
+    .img-overlay {
+        display: none;
+        position: fixed;
+        inset: 0;
+        background: rgba(0,0,0,0.8);
+        align-items: center;
+        justify-content: center;
+        z-index: 1000;
+        padding: 20px;
+    }
+
+    .img-overlay.show {
+        display: flex;
+    }
+
+    .img-overlay img {
+        max-width: 100%;
+        max-height: 100%;
+        border-radius: 8px;
+    }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+    <h1>Athletica <span>Order Manage</span></h1>
+    <div class="conn-status" id="connStatus">Connecting…</div>
+</div>
+
+<div class="filters">
+    <button type="button" class="filter-btn active" data-filter="all" onclick="setFilter('all')">All</button>
+    <button type="button" class="filter-btn" data-filter="pending" onclick="setFilter('pending')">Pending</button>
+    <button type="button" class="filter-btn" data-filter="confirmed" onclick="setFilter('confirmed')">Confirmed</button>
+    <button type="button" class="filter-btn" data-filter="cancelled" onclick="setFilter('cancelled')">Cancelled</button>
+</div>
+
+<div class="container">
+    <div id="orderList"></div>
+</div>
+
+<div class="img-overlay" id="imgOverlay" onclick="closeImgOverlay()">
+    <img id="imgOverlayImg" src="" alt="Payment proof">
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script src="https://www.gstatic.com/firebasejs/10.13.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.13.1/firebase-firestore-compat.js"></script>
+<script>
+    var firebaseConfig = {
+        apiKey: "AIzaSyBudHLjPx4XMaJuh1LgZdT0-9EP9HFm9Zw",
+        authDomain: "athletica-b3989.firebaseapp.com",
+        projectId: "athletica-b3989",
+        storageBucket: "athletica-b3989.firebasestorage.app",
+        messagingSenderId: "877654285464",
+        appId: "1:877654285464:web:2e6f3ddb69cb5beac204ed"
+    };
+    firebase.initializeApp(firebaseConfig);
+    var db = firebase.firestore();
+
+    var orders = [];
+    var products = {};
+    var currentFilter = "all";
+    var baseTitle = document.title;
+
+    function escapeHtml(str) {
+        if (str === null || str === undefined) return "";
+        return String(str)
+            .replace(/&/g, "&amp;")
+            .replace(/</g, "&lt;")
+            .replace(/>/g, "&gt;")
+            .replace(/"/g, "&quot;")
+            .replace(/'/g, "&#39;");
+    }
+
+    function orderSummaryText(order) {
+        return (order.items || []).map(function (it) {
+            return it.name + (it.size ? " (" + it.size + ")" : "") + " x" + it.qty;
+        }).join(", ");
+    }
+
+    function showToast(msg) {
+        var el = document.getElementById("toast");
+        el.textContent = msg;
+        el.classList.add("show");
+        setTimeout(function () { el.classList.remove("show"); }, 2200);
+    }
+
+    function setFilter(f) {
+        currentFilter = f;
+        document.querySelectorAll(".filter-btn").forEach(function (b) {
+            b.classList.toggle("active", b.getAttribute("data-filter") === f);
+        });
+        renderOrders();
+    }
+
+    function openImgOverlay(src) {
+        document.getElementById("imgOverlayImg").src = src;
+        document.getElementById("imgOverlay").classList.add("show");
+    }
+
+    function closeImgOverlay() {
+        document.getElementById("imgOverlay").classList.remove("show");
+    }
+
+    function saveOrders() {
+        db.collection("athletica").doc("orders").set({ list: orders });
+    }
+
+    function adjustStockForItems(items, direction) {
+        if (!items || items.length === 0) return;
+        var changed = false;
+        items.forEach(function (item) {
+            var product = products[item.id];
+            if (!product || typeof product.stock !== "number") return;
+            product.stock = Math.max(0, product.stock + (direction * item.qty));
+            changed = true;
+        });
+        if (changed) {
+            db.collection("athletica").doc("products").set({ map: products });
+        }
+    }
+
+    function approveOrder(orderId) {
+        var order = orders.find(function (o) { return o.id === orderId; });
+        if (!order || order.status !== "pending") return;
+
+        order.status = "confirmed";
+        order.buyerUnread = (order.buyerUnread || 0) + 1;
+        saveOrders();
+        showToast("Order approved.");
+    }
+
+    function declineOrder(orderId) {
+        var order = orders.find(function (o) { return o.id === orderId; });
+        if (!order || order.status !== "pending") return;
+        if (!confirm("Decline this order? Stock will be returned.")) return;
+
+        order.status = "cancelled";
+        order.buyerUnread = (order.buyerUnread || 0) + 1;
+        saveOrders();
+        adjustStockForItems(order.items, 1);
+        showToast("Order declined.");
+    }
+
+    function cancelOrder(orderId) {
+        var order = orders.find(function (o) { return o.id === orderId; });
+        if (!order || order.status !== "confirmed") return;
+        if (!confirm("Cancel this already-confirmed order? Stock will be returned.")) return;
+
+        order.status = "cancelled";
+        order.buyerUnread = (order.buyerUnread || 0) + 1;
+        saveOrders();
+        adjustStockForItems(order.items, 1);
+        showToast("Order cancelled.");
+    }
+
+    function statusLabel(status) {
+        if (status === "pending") return "Pending Approval";
+        if (status === "confirmed") return "Confirmed";
+        return "Cancelled";
+    }
+
+    function renderOrders() {
+        var listEl = document.getElementById("orderList");
+
+        var visible = orders.slice().reverse();
+        if (currentFilter !== "all") {
+            visible = visible.filter(function (o) { return o.status === currentFilter; });
+        }
+
+        var pendingCount = orders.filter(function (o) { return o.status === "pending"; }).length;
+        document.title = (pendingCount > 0 ? "(" + pendingCount + ") " : "") + baseTitle;
+
+        if (visible.length === 0) {
+            listEl.innerHTML = '<div class="empty-state">No orders here.</div>';
+            return;
+        }
+
+        listEl.innerHTML = visible.map(function (o) {
+            var itemsText = orderSummaryText(o);
+            var sellerNote = o.sellerEmail
+                ? '<div class="order-seller-note">Handled by: ' + escapeHtml(o.sellerName || "Seller") + '</div>'
+                : "";
+
+            var detailsHtml = "";
+            if (o.method === "COD") {
+                detailsHtml =
+                    '<div class="order-meta">' +
+                        '<strong>Address:</strong> ' + escapeHtml(o.details && o.details.address) + '<br>' +
+                        '<strong>Year Level:</strong> ' + escapeHtml(o.details && o.details.yearLevel) + '<br>' +
+                        '<strong>Section:</strong> ' + escapeHtml(o.details && o.details.section) + '<br>' +
+                        '<strong>Phone:</strong> ' + escapeHtml(o.details && o.details.phone) +
+                    '</div>';
+            } else if (o.details && o.details.paymentProof) {
+                detailsHtml =
+                    '<div class="order-meta"><strong>Payment Proof:</strong></div>' +
+                    '<img src="' + o.details.paymentProof + '" class="proof-img" onclick="openImgOverlay(\'' + o.details.paymentProof.replace(/'/g, "\\'") + '\')" alt="Payment proof">';
+            }
+
+            var actionsHtml = "";
+            if (o.status === "pending") {
+                actionsHtml =
+                    '<div class="order-actions">' +
+                        '<button type="button" class="btn-approve" onclick="approveOrder(\'' + o.id + '\')">Approve</button>' +
+                        '<button type="button" class="btn-decline" onclick="declineOrder(\'' + o.id + '\')">Decline</button>' +
+                    '</div>';
+            } else if (o.status === "confirmed") {
+                actionsHtml =
+                    '<div class="order-actions">' +
+                        '<button type="button" class="btn-cancel" onclick="cancelOrder(\'' + o.id + '\')">Cancel</button>' +
+                    '</div>';
+            }
+
+            return (
+                '<div class="order-card status-' + o.status + '">' +
+                    '<div class="order-top">' +
+                        '<div class="order-buyer">' + escapeHtml(o.buyerName) +
+                            '<div class="order-buyer-email">' + escapeHtml(o.buyerEmail) + '</div>' +
+                        '</div>' +
+                        '<span class="order-status-badge status-' + o.status + '">' + statusLabel(o.status) + '</span>' +
+                    '</div>' +
+                    '<div class="order-items">' + escapeHtml(itemsText) + '</div>' +
+                    '<div class="order-meta">' +
+                        '<strong>Total:</strong> ₱' + Number(o.total || 0).toFixed(2) + '<br>' +
+                        '<strong>Payment Method:</strong> ' + escapeHtml(o.method) + '<br>' +
+                        '<strong>Date:</strong> ' + escapeHtml(o.date) +
+                    '</div>' +
+                    sellerNote +
+                    detailsHtml +
+                    actionsHtml +
+                '</div>'
+            );
+        }).join("");
+    }
+
+    db.collection("athletica").doc("orders").onSnapshot(function (doc) {
+        orders = (doc.exists && doc.data().list) ? doc.data().list : [];
+        document.getElementById("connStatus").textContent = "Live";
+        document.getElementById("connStatus").classList.add("online");
+        renderOrders();
+    }, function (err) {
+        console.error("orders sync error", err);
+        document.getElementById("connStatus").textContent = "Connection error";
+    });
+
+    db.collection("athletica").doc("products").onSnapshot(function (doc) {
+        products = (doc.exists && doc.data().map) ? doc.data().map : {};
+    }, function (err) { console.error("products sync error", err); });
+</script>
+
+</body>
+</html>
