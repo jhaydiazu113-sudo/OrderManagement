@@ -651,7 +651,12 @@
     var baseTitle = document.title;
 
     // ---- Auth / referral state ----
-    var USERS_DOC = db.collection("athletica").doc("users");
+    // IMPORTANT: this must NOT be the same document as index.html's customer
+    // "users" doc (athletica/users, shape { list: [...] }). order-manage.html
+    // used to point at that same doc with a different shape ({ map: {...} }),
+    // and every full .set({ map }) overwrite here silently wiped out ALL of
+    // index.html's registered accounts (owner included). Kept on its own doc.
+    var USERS_DOC = db.collection("athletica").doc("orderManageAccounts");
     var REFERRALS_DOC = db.collection("athletica").doc("referrals");
     var OWNER_USERNAME = "Athletica";
     var OWNER_PASSWORD = "cvsuathlete";
