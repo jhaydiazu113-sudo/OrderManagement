@@ -1,0 +1,1937 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Athletica — Admin/Seller Panel</title>
+<style>
+    * { box-sizing: border-box; }
+
+    /* Hide the browser's own built-in "reveal password" icon (Edge/IE show
+       one natively via ::-ms-reveal) so it doesn't double up with our
+       custom eye toggle button next to each password field. */
+    input[type="password"]::-ms-reveal,
+    input[type="password"]::-ms-clear {
+        display: none;
+    }
+
+    body {
+        margin: 0;
+        font-family: 'Poppins', Arial, sans-serif;
+        background: #f5f5f5;
+        color: #222;
+    }
+
+    .topbar {
+        background: #111;
+        color: #fff;
+        padding: 18px 24px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        flex-wrap: wrap;
+        gap: 12px;
+    }
+
+    .topbar h1 {
+        margin: 0;
+        font-size: 20px;
+    }
+
+    .topbar h1 span {
+        color: #145A32;
+    }
+
+    .conn-status {
+        font-size: 12px;
+        color: #aaa;
+    }
+
+    .conn-status.online {
+        color: #4caf50;
+    }
+
+    .topbar-actions {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        flex-wrap: wrap;
+    }
+
+    .user-chip {
+        font-size: 12px;
+        color: #ccc;
+        background: rgba(255,255,255,0.08);
+        padding: 6px 12px;
+        border-radius: 20px;
+    }
+
+    .topbar-actions button {
+        background: transparent;
+        border: 1px solid #555;
+        color: #fff;
+        padding: 6px 14px;
+        border-radius: 20px;
+        font-size: 12px;
+        font-family: inherit;
+        cursor: pointer;
+    }
+
+    .topbar-actions button:hover {
+        border-color: #145A32;
+        color: #145A32;
+    }
+
+    .back-to-shop-btn {
+        background: transparent;
+        border: 1px solid #555;
+        color: #fff;
+        padding: 6px 14px;
+        border-radius: 20px;
+        font-size: 12px;
+        font-family: inherit;
+        text-decoration: none;
+        display: inline-block;
+        cursor: pointer;
+    }
+
+    .back-to-shop-btn:hover {
+        border-color: #145A32;
+        color: #145A32;
+    }
+
+    .back-to-shop-link {
+        display: block;
+        text-align: center;
+        margin-top: 18px;
+        font-size: 13px;
+        color: #777;
+        text-decoration: none;
+    }
+
+    .back-to-shop-link:hover {
+        color: #145A32;
+    }
+
+    .filters {
+        display: flex;
+        gap: 8px;
+        padding: 16px 24px 0;
+        flex-wrap: wrap;
+    }
+
+    .filter-btn {
+        border: 1px solid #ddd;
+        background: #fff;
+        color: #444;
+        padding: 6px 16px;
+        border-radius: 20px;
+        font-size: 13px;
+        cursor: pointer;
+        font-family: inherit;
+    }
+
+    .filter-btn.active {
+        background: #145A32;
+        border-color: #145A32;
+        color: #fff;
+    }
+
+    .container {
+        max-width: 900px;
+        margin: 0 auto;
+        padding: 16px 24px 60px;
+    }
+
+    .empty-state {
+        text-align: center;
+        color: #888;
+        padding: 60px 20px;
+        font-size: 14px;
+    }
+
+    .order-card {
+        background: #fff;
+        border-radius: 10px;
+        box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+        padding: 18px 20px;
+        margin-bottom: 14px;
+        border-left: 4px solid #ccc;
+    }
+
+    .order-card.status-pending {
+        border-left-color: #ff9800;
+    }
+
+    .order-card.status-confirmed {
+        border-left-color: #4caf50;
+    }
+
+    .order-card.status-cancelled {
+        border-left-color: #999;
+        opacity: 0.75;
+    }
+
+    .order-card.status-delivered {
+        border-left-color: #2196f3;
+    }
+
+    .order-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 10px;
+        flex-wrap: wrap;
+        cursor: pointer;
+        user-select: none;
+    }
+
+    .order-header-left {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        min-width: 0;
+    }
+
+    .order-toggle-arrow {
+        flex-shrink: 0;
+        font-size: 12px;
+        color: #888;
+        width: 18px;
+        height: 18px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: transform 0.15s ease;
+    }
+
+    .order-header-title {
+        font-weight: 600;
+        font-size: 14px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    .order-body {
+        margin-top: 14px;
+        padding-top: 14px;
+        border-top: 1px solid #eee;
+    }
+
+    .order-body-buyer {
+        font-size: 13px;
+        color: #555;
+        margin-bottom: 6px;
+    }
+
+    .order-body-buyer strong {
+        color: #222;
+    }
+
+    .order-status-badge {
+        font-size: 12px;
+        font-weight: 600;
+        padding: 4px 12px;
+        border-radius: 20px;
+        white-space: nowrap;
+        text-transform: uppercase;
+        letter-spacing: 0.3px;
+    }
+
+    .order-status-badge.status-pending {
+        background: #fff3e0;
+        color: #e65100;
+    }
+
+    .order-status-badge.status-confirmed {
+        background: #e8f5e9;
+        color: #2e7d32;
+    }
+
+    .order-status-badge.status-cancelled {
+        background: #eee;
+        color: #666;
+    }
+
+    .order-status-badge.status-delivered {
+        background: #e3f2fd;
+        color: #1565c0;
+    }
+
+    .order-items {
+        margin-top: 10px;
+        font-size: 14px;
+        color: #333;
+    }
+
+    .order-meta {
+        margin-top: 8px;
+        font-size: 13px;
+        color: #555;
+        line-height: 1.6;
+    }
+
+    .order-meta strong {
+        color: #222;
+    }
+
+    .order-seller-note {
+        font-size: 12px;
+        color: #145A32;
+        margin-top: 6px;
+    }
+
+    .proof-img {
+        max-width: 180px;
+        border-radius: 8px;
+        margin-top: 6px;
+        display: block;
+        cursor: zoom-in;
+        border: 1px solid #eee;
+    }
+
+    .order-actions {
+        margin-top: 14px;
+        display: flex;
+        gap: 10px;
+        flex-wrap: wrap;
+    }
+
+    .order-actions button {
+        border: none;
+        cursor: pointer;
+        font-family: inherit;
+        font-size: 13px;
+        padding: 8px 20px;
+        border-radius: 20px;
+        font-weight: 600;
+    }
+
+    .btn-approve {
+        background: #145A32;
+        color: #fff;
+    }
+
+    .btn-approve:hover {
+        background: #0d3d22;
+    }
+
+    .btn-decline, .btn-cancel {
+        background: #fff;
+        color: #c62828;
+        border: 1px solid #c62828 !important;
+    }
+
+    .btn-decline:hover, .btn-cancel:hover {
+        background: #ffebee;
+    }
+
+    .btn-deliver {
+        background: #fff;
+        color: #1565c0;
+        border: 1px solid #1565c0 !important;
+    }
+
+    .btn-deliver:hover {
+        background: #e3f2fd;
+    }
+
+    .toast {
+        position: fixed;
+        bottom: 20px;
+        right: 20px;
+        background: #222;
+        color: #fff;
+        padding: 12px 20px;
+        border-radius: 8px;
+        font-size: 13px;
+        opacity: 0;
+        transform: translateY(10px);
+        transition: opacity 0.25s, transform 0.25s;
+        pointer-events: none;
+        z-index: 999;
+    }
+
+    .toast.show {
+        opacity: 1;
+        transform: translateY(0);
+    }
+
+    .img-overlay {
+        display: none;
+        position: fixed;
+        inset: 0;
+        background: rgba(0,0,0,0.8);
+        align-items: center;
+        justify-content: center;
+        z-index: 1000;
+        padding: 20px;
+    }
+
+    .img-overlay.show {
+        display: flex;
+    }
+
+    .img-overlay img {
+        max-width: 100%;
+        max-height: 100%;
+        border-radius: 8px;
+    }
+
+    /* ---- Auth screen ---- */
+    .auth-overlay {
+        min-height: 100vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: #f5f5f5;
+        padding: 20px;
+    }
+
+    .auth-overlay.hidden {
+        display: none;
+    }
+
+    .auth-box {
+        background: #fff;
+        border-radius: 14px;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        padding: 30px 28px;
+        max-width: 360px;
+        width: 100%;
+    }
+
+    .auth-box h2 {
+        margin: 0 0 18px;
+        font-size: 18px;
+        text-align: center;
+        color: #111;
+    }
+
+    .auth-box h2 span {
+        color: #145A32;
+    }
+
+    .auth-subtitle {
+        text-align: center;
+        font-size: 12.5px;
+        color: #777;
+        margin: 0 0 18px;
+    }
+
+    .auth-form {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+    }
+
+    .auth-form input {
+        padding: 10px 14px;
+        border: 1px solid #ddd;
+        border-radius: 20px;
+        font-family: inherit;
+        font-size: 13px;
+        outline: none;
+        width: 100%;
+    }
+
+    .auth-form input:focus {
+        border-color: #145A32;
+    }
+
+    .password-field {
+        position: relative;
+    }
+
+    .password-field input {
+        padding-right: 40px;
+    }
+
+    .toggle-password {
+        position: absolute;
+        right: 4px;
+        top: 50%;
+        transform: translateY(-50%);
+        background: none;
+        border: none;
+        cursor: pointer;
+        padding: 6px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #999;
+        line-height: 0;
+    }
+
+    .toggle-password:hover {
+        color: #145A32;
+    }
+
+    .toggle-password svg {
+        width: 18px;
+        height: 18px;
+        display: block;
+    }
+
+    .toggle-password .eye-off {
+        display: none;
+    }
+
+    .toggle-password.is-visible .eye-on {
+        display: none;
+    }
+
+    .toggle-password.is-visible .eye-off {
+        display: block;
+    }
+
+    .auth-submit {
+        border: none;
+        background: #145A32;
+        color: #fff;
+        padding: 10px 14px;
+        border-radius: 20px;
+        font-weight: 600;
+        font-size: 13px;
+        cursor: pointer;
+        font-family: inherit;
+    }
+
+    .auth-submit:hover {
+        background: #0d3d22;
+    }
+
+    .auth-error {
+        color: #c62828;
+        font-size: 12px;
+        min-height: 14px;
+    }
+
+    /* ---- Referral modal ---- */
+    .modal-overlay {
+        display: none;
+        position: fixed;
+        inset: 0;
+        background: rgba(0,0,0,0.5);
+        align-items: center;
+        justify-content: center;
+        z-index: 1000;
+        padding: 20px;
+    }
+
+    .modal-overlay.show {
+        display: flex;
+    }
+
+    .modal-box {
+        background: #fff;
+        border-radius: 14px;
+        padding: 24px;
+        max-width: 420px;
+        width: 100%;
+        max-height: 80vh;
+        overflow-y: auto;
+    }
+
+    .modal-head {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 14px;
+    }
+
+    .modal-head h3 {
+        margin: 0;
+        font-size: 16px;
+    }
+
+    .modal-close {
+        border: none;
+        background: none;
+        font-size: 20px;
+        line-height: 1;
+        cursor: pointer;
+        color: #888;
+    }
+
+    .referral-list {
+        margin-top: 16px;
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+    }
+
+    .referral-item {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        border: 1px solid #eee;
+        border-radius: 8px;
+        padding: 8px 12px;
+        font-size: 13px;
+    }
+
+    .referral-code {
+        font-weight: 700;
+        letter-spacing: 1px;
+    }
+
+    .referral-status {
+        font-size: 11px;
+        padding: 3px 10px;
+        border-radius: 20px;
+        font-weight: 600;
+    }
+
+    .referral-status.unused {
+        background: #e8f5e9;
+        color: #2e7d32;
+    }
+
+    .referral-status.used {
+        background: #eee;
+        color: #666;
+    }
+
+    .referral-item-right {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .btn-remove-referral {
+        border: 1px solid #c62828;
+        background: #fff;
+        color: #c62828;
+        font-size: 11px;
+        font-weight: 600;
+        padding: 3px 10px;
+        border-radius: 20px;
+        cursor: pointer;
+        font-family: inherit;
+    }
+
+    .btn-remove-referral:hover {
+        background: #ffebee;
+    }
+
+    /* ---- View tabs (Orders / Products) ---- */
+    .view-tabs {
+        display: flex;
+        gap: 8px;
+        padding: 16px 24px 0;
+    }
+
+    .view-tab {
+        border: none;
+        background: transparent;
+        color: #666;
+        font-family: inherit;
+        font-size: 14px;
+        font-weight: 600;
+        padding: 8px 4px;
+        cursor: pointer;
+        border-bottom: 2px solid transparent;
+    }
+
+    .view-tab.active {
+        color: #145A32;
+        border-bottom-color: #145A32;
+    }
+
+    /* ---- Users view ---- */
+    .users-search-wrap {
+        margin-bottom: 16px;
+    }
+
+    .users-search-input {
+        width: 100%;
+        border: 1px solid #ddd;
+        background: #fff;
+        border-radius: 20px;
+        padding: 10px 16px;
+        font-size: 13px;
+        font-family: inherit;
+        outline: none;
+    }
+
+    .users-search-input:focus {
+        border-color: #145A32;
+    }
+
+    .user-card {
+        background: #fff;
+        border-radius: 10px;
+        box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+        padding: 14px 18px;
+        margin-bottom: 12px;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+    }
+
+    .user-card-avatar {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        background: #145A32;
+        color: #fff;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 700;
+        font-size: 15px;
+        flex-shrink: 0;
+    }
+
+    .user-card-avatar-img {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        object-fit: cover;
+        flex-shrink: 0;
+    }
+
+    .user-card-info {
+        min-width: 0;
+        flex: 1;
+    }
+
+    .user-card-name {
+        font-weight: 600;
+        font-size: 14px;
+        color: #222;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    .user-card-username {
+        font-size: 12px;
+        color: #888;
+        margin-top: 2px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    .user-card-meta {
+        font-size: 11px;
+        color: #aaa;
+        margin-top: 2px;
+    }
+
+    .user-card-right {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        flex-shrink: 0;
+    }
+
+    .user-role-badge {
+        font-size: 11px;
+        font-weight: 600;
+        padding: 3px 10px;
+        border-radius: 20px;
+        white-space: nowrap;
+        text-transform: uppercase;
+        letter-spacing: 0.3px;
+    }
+
+    .user-role-badge.role-owner {
+        background: #ede7f6;
+        color: #5e35b1;
+    }
+
+    .user-role-badge.role-seller {
+        background: #e8f5e9;
+        color: #2e7d32;
+    }
+
+    .user-role-badge.role-customer {
+        background: #eee;
+        color: #666;
+    }
+
+    /* ---- Products view ---- */
+    .product-card {
+        background: #fff;
+        border-radius: 10px;
+        box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+        padding: 16px 18px;
+        margin-bottom: 14px;
+    }
+
+    .product-card-head {
+        display: flex;
+        gap: 12px;
+    }
+
+    .product-card-img {
+        width: 60px;
+        height: 60px;
+        border-radius: 8px;
+        object-fit: cover;
+        background: #f2f2f2;
+        flex-shrink: 0;
+    }
+
+    .product-card-info {
+        min-width: 0;
+        flex: 1;
+    }
+
+    .product-card-name {
+        font-weight: 600;
+        font-size: 15px;
+        color: #222;
+    }
+
+    .product-card-meta {
+        font-size: 12px;
+        color: #888;
+        margin-top: 2px;
+    }
+
+    .product-card-rating {
+        font-size: 13px;
+        color: #ff9800;
+        margin-top: 4px;
+    }
+
+    .product-card-rating span {
+        color: #888;
+        font-size: 12px;
+        margin-left: 4px;
+    }
+
+    .product-card-reviews-toggle {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-top: 14px;
+        padding-top: 12px;
+        border-top: 1px solid #eee;
+        cursor: pointer;
+        font-size: 13px;
+        font-weight: 600;
+        color: #444;
+    }
+
+    .product-card-reviews-arrow {
+        font-size: 12px;
+        color: #999;
+        transition: transform 0.15s ease;
+    }
+
+    .product-card-reviews-toggle.open .product-card-reviews-arrow {
+        transform: rotate(180deg);
+    }
+
+    .product-card-reviews-body {
+        display: none;
+        margin-top: 10px;
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+    }
+
+    .product-card-reviews-body.show {
+        display: flex;
+    }
+
+    .product-review-item {
+        border-bottom: 1px solid #f2f2f2;
+        padding-bottom: 10px;
+    }
+
+    .product-review-head {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 4px;
+        gap: 8px;
+    }
+
+    .product-review-user {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        min-width: 0;
+    }
+
+    .product-review-avatar-img,
+    .product-review-avatar-initials {
+        width: 24px;
+        height: 24px;
+        border-radius: 50%;
+        flex-shrink: 0;
+    }
+
+    .product-review-avatar-img {
+        object-fit: cover;
+    }
+
+    .product-review-avatar-initials {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: #145A32;
+        color: #fff;
+        font-size: 11px;
+        font-weight: bold;
+    }
+
+    .product-review-name {
+        font-weight: 600;
+        font-size: 13px;
+        color: #444;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .product-review-verified {
+        font-size: 10px;
+        font-weight: 700;
+        color: #1c8a53;
+        background: #e8f5e9;
+        padding: 2px 8px;
+        border-radius: 10px;
+        flex-shrink: 0;
+    }
+
+    .product-review-date {
+        font-size: 11px;
+        color: #aaa;
+        flex-shrink: 0;
+    }
+
+    .product-review-stars {
+        color: #145A32;
+        font-size: 13px;
+        margin-bottom: 2px;
+    }
+
+    .product-review-comment {
+        font-size: 13px;
+        color: #555;
+        line-height: 1.5;
+        margin: 2px 0 0;
+    }
+
+    .product-review-photo {
+        max-width: 130px;
+        max-height: 130px;
+        border-radius: 8px;
+        margin-top: 6px;
+        display: block;
+        cursor: zoom-in;
+        border: 1px solid #eee;
+        object-fit: cover;
+    }
+
+    .product-reviews-empty {
+        font-size: 13px;
+        color: #999;
+    }
+
+    /* ---- Refunds view ---- */
+    .refund-card-head {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        gap: 10px;
+        margin-bottom: 12px;
+    }
+
+    .refund-status-badge {
+        font-size: 11px;
+        font-weight: 700;
+        padding: 4px 10px;
+        border-radius: 12px;
+        white-space: nowrap;
+        flex-shrink: 0;
+    }
+
+    .refund-status-pending {
+        background: #fff3cd;
+        color: #9a7d0a;
+    }
+
+    .refund-status-approved {
+        background: #d9f7e5;
+        color: #1a7f4b;
+    }
+
+    .refund-status-completed {
+        background: #e0e0e0;
+        color: #555;
+    }
+
+    .refund-detail-row {
+        font-size: 13px;
+        color: #444;
+        margin-bottom: 6px;
+        line-height: 1.5;
+    }
+
+    .refund-detail-row strong {
+        color: #222;
+    }
+
+    .refund-submitted-at {
+        font-size: 11px;
+        color: #999;
+        margin-top: 8px;
+    }
+
+    .refund-card-actions {
+        margin-top: 14px;
+        padding-top: 12px;
+        border-top: 1px solid #eee;
+        display: flex;
+        justify-content: flex-end;
+    }
+
+    .btn-approve-refund,
+    .btn-complete-refund {
+        border: none;
+        font-family: inherit;
+        font-weight: 700;
+        font-size: 13px;
+        padding: 10px 20px;
+        border-radius: 20px;
+        cursor: pointer;
+        color: #fff;
+    }
+
+    .btn-approve-refund {
+        background: #145A32;
+    }
+
+    .btn-approve-refund:hover {
+        background: #0d3d22;
+    }
+
+    .btn-complete-refund {
+        background: #1a7f4b;
+    }
+
+    .btn-complete-refund:hover {
+        background: #146339;
+    }
+</style>
+</head>
+<body>
+
+<div class="auth-overlay" id="authOverlay">
+    <div class="auth-box">
+        <h2>Athletica <span>Admin/Seller Panel</span></h2>
+        <p class="auth-subtitle" id="authSubtitle">Log in with your Athletica account.</p>
+
+        <form id="loginForm" class="auth-form" onsubmit="return handleLogin(event)">
+            <input type="text" id="loginUsername" placeholder="Username or Email" autocomplete="username" required>
+            <div class="password-field">
+                <input type="password" id="loginPassword" placeholder="Password" autocomplete="current-password" required>
+                <button type="button" class="toggle-password" onclick="togglePasswordVisibility('loginPassword', this)" aria-label="Show password">
+                    <svg class="eye-on" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+                    <svg class="eye-off" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.94 10.94 0 0 1 12 20c-7 0-11-8-11-8a20.3 20.3 0 0 1 5.06-5.94M9.9 4.24A10.4 10.4 0 0 1 12 4c7 0 11 8 11 8a20.3 20.3 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path><line x1="1" y1="1" x2="23" y2="23"></line></svg>
+                </button>
+            </div>
+            <div class="auth-error" id="loginError"></div>
+            <button type="submit" class="auth-submit">Log In</button>
+        </form>
+
+        <form id="referralForm" class="auth-form" style="display:none" onsubmit="return handleReferralSubmit(event)">
+            <input type="text" id="referralCodeInput" placeholder="Enter referral code" required autofocus>
+            <div class="auth-error" id="referralError"></div>
+            <button type="submit" class="auth-submit">Continue as Seller</button>
+            <a href="#" class="back-to-shop-link" onclick="cancelReferralStep(); return false;">&larr; Back to Log In</a>
+        </form>
+
+        <a href="https://jhaydiazu113-sudo.github.io/Athletica/" class="back-to-shop-link" id="backToShopLink">&larr; Back to Shop</a>
+    </div>
+</div>
+
+<div id="appRoot" style="display:none">
+
+<div class="topbar">
+    <h1>Athletica <span>Admin/Seller Panel</span></h1>
+    <div class="topbar-actions">
+        <a href="https://jhaydiazu113-sudo.github.io/Athletica/" class="back-to-shop-btn">&larr; Back to Shop</a>
+        <span class="conn-status" id="connStatus">Connecting…</span>
+        <span class="user-chip" id="userChip"></span>
+        <button type="button" id="referralsBtn" style="display:none" onclick="openReferralModal()">Referrals</button>
+        <button type="button" onclick="logout()">Log Out</button>
+    </div>
+</div>
+
+<div class="view-tabs">
+    <button type="button" class="view-tab active" data-view="orders" onclick="setView('orders')">Orders</button>
+    <button type="button" class="view-tab" data-view="products" onclick="setView('products')">Products</button>
+    <button type="button" class="view-tab" data-view="refunds" onclick="setView('refunds')">Request Refund</button>
+    <button type="button" class="view-tab" data-view="users" id="usersTabBtn" style="display:none;" onclick="setView('users')">Users</button>
+</div>
+
+<div class="filters" id="ordersFilters">
+    <button type="button" class="filter-btn active" data-filter="all" onclick="setFilter('all')">All</button>
+    <button type="button" class="filter-btn" data-filter="pending" onclick="setFilter('pending')">Pending</button>
+    <button type="button" class="filter-btn" data-filter="confirmed" onclick="setFilter('confirmed')">Confirmed</button>
+    <button type="button" class="filter-btn" data-filter="delivered" onclick="setFilter('delivered')">Delivered</button>
+    <button type="button" class="filter-btn" data-filter="cancelled" onclick="setFilter('cancelled')">Cancelled</button>
+</div>
+
+<div class="container" id="ordersContainer">
+    <div id="orderList"></div>
+</div>
+
+<div class="container" id="productsContainer" style="display:none;">
+    <div id="productsList"></div>
+</div>
+
+<div class="container" id="refundsContainer" style="display:none;">
+    <div id="refundsList"></div>
+</div>
+
+<div class="container" id="usersContainer" style="display:none;">
+    <div class="users-search-wrap">
+        <input type="text" id="usersSearchInput" class="users-search-input" placeholder="Search website users by name or username…" oninput="handleUsersSearch(this.value)">
+    </div>
+    <div id="usersList"></div>
+</div>
+
+</div>
+
+<div class="img-overlay" id="imgOverlay" onclick="closeImgOverlay()">
+    <img id="imgOverlayImg" src="" alt="Payment proof">
+</div>
+
+<div class="modal-overlay" id="referralModal">
+    <div class="modal-box">
+        <div class="modal-head">
+            <h3>Seller Referral Codes</h3>
+            <button type="button" class="modal-close" onclick="closeReferralModal()">&times;</button>
+        </div>
+        <button type="button" class="btn-approve" onclick="generateReferral()">Generate New Referral Code</button>
+        <div id="referralList" class="referral-list"></div>
+    </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script src="https://www.gstatic.com/firebasejs/10.13.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.13.1/firebase-firestore-compat.js"></script>
+<script>
+    var firebaseConfig = {
+        apiKey: "AIzaSyBudHLjPx4XMaJuh1LgZdT0-9EP9HFm9Zw",
+        authDomain: "athletica-b3989.firebaseapp.com",
+        projectId: "athletica-b3989",
+        storageBucket: "athletica-b3989.firebasestorage.app",
+        messagingSenderId: "877654285464",
+        appId: "1:877654285464:web:2e6f3ddb69cb5beac204ed"
+    };
+    firebase.initializeApp(firebaseConfig);
+    var db = firebase.firestore();
+
+    var orders = [];
+    var products = {};
+    var productReviews = {};
+    var productComments = {};
+    var currentView = "orders";
+    var expandedProductIds = {};
+    var currentFilter = "all";
+    var baseTitle = document.title;
+    var expandedOrderIds = {};
+
+    // ---- Auth / referral state ----
+    // Login credentials now come from the real website account (index.html's
+    // athletica/users doc, shape { list: [...] } — read via the siteUsers
+    // listener below). This "orderManageAccounts" doc no longer stores any
+    // passwords; it just tracks which site accounts (keyed by email) have
+    // been granted seller access in this panel, plus which referral code
+    // they used. IMPORTANT: keep this on its own doc — never point it at
+    // athletica/users itself, or a full overwrite here would wipe out every
+    // registered shop account.
+    var USERS_DOC = db.collection("athletica").doc("orderManageAccounts");
+    var REFERRALS_DOC = db.collection("athletica").doc("referrals");
+    var OWNER_EMAIL = "owner@athletica.com";
+
+    var usersMap = {};
+    var referrals = [];
+    var currentUser = null;
+    var siteUsers = [];
+    var pendingSiteUser = null;
+
+    function escapeHtml(str) {
+        if (str === null || str === undefined) return "";
+        return String(str)
+            .replace(/&/g, "&amp;")
+            .replace(/</g, "&lt;")
+            .replace(/>/g, "&gt;")
+            .replace(/"/g, "&quot;")
+            .replace(/'/g, "&#39;");
+    }
+
+    function orderSummaryText(order) {
+        return (order.items || []).map(function (it) {
+            return it.name + (it.size ? " (" + it.size + ")" : "") + " x" + it.qty;
+        }).join(", ");
+    }
+
+    function showToast(msg) {
+        var el = document.getElementById("toast");
+        el.textContent = msg;
+        el.classList.add("show");
+        setTimeout(function () { el.classList.remove("show"); }, 2200);
+    }
+
+    function setFilter(f) {
+        currentFilter = f;
+        document.querySelectorAll(".filter-btn").forEach(function (b) {
+            b.classList.toggle("active", b.getAttribute("data-filter") === f);
+        });
+        renderOrders();
+    }
+
+    function setView(view) {
+        if (view === "users" && (!currentUser || currentUser.role !== "owner")) return;
+
+        currentView = view;
+        document.querySelectorAll(".view-tab").forEach(function (b) {
+            b.classList.toggle("active", b.getAttribute("data-view") === view);
+        });
+        document.getElementById("ordersFilters").style.display = view === "orders" ? "flex" : "none";
+        document.getElementById("ordersContainer").style.display = view === "orders" ? "block" : "none";
+        document.getElementById("productsContainer").style.display = view === "products" ? "block" : "none";
+        document.getElementById("refundsContainer").style.display = view === "refunds" ? "block" : "none";
+        document.getElementById("usersContainer").style.display = view === "users" ? "block" : "none";
+        if (view === "products") renderProducts();
+        if (view === "refunds") renderRefunds();
+        if (view === "users") renderUsers();
+    }
+
+    var usersSearchQuery = "";
+
+    function handleUsersSearch(val) {
+        usersSearchQuery = (val || "").trim().toLowerCase();
+        renderUsers();
+    }
+
+    function renderUsers() {
+        var listEl = document.getElementById("usersList");
+        if (!listEl) return;
+
+        var entries = siteUsers.slice();
+
+        if (usersSearchQuery) {
+            entries = entries.filter(function (u) {
+                var name = (u.name || "").toLowerCase();
+                var username = (u.username || "").toLowerCase();
+                var email = (u.email || "").toLowerCase();
+                return name.indexOf(usersSearchQuery) !== -1 ||
+                    username.indexOf(usersSearchQuery) !== -1 ||
+                    email.indexOf(usersSearchQuery) !== -1;
+            });
+        }
+
+        if (entries.length === 0) {
+            listEl.innerHTML = '<div class="empty-state">No users found.</div>';
+            return;
+        }
+
+        listEl.innerHTML = entries.map(function (u) {
+            var name = u.name || u.username || u.email || "User";
+            var initial = name.charAt(0).toUpperCase();
+            var avatarHtml = u.avatar
+                ? '<img src="' + escapeHtml(u.avatar) + '" class="user-card-avatar-img" alt="">'
+                : '<div class="user-card-avatar">' + escapeHtml(initial) + '</div>';
+
+            var isOwner = u.isOwner || u.email === OWNER_EMAIL;
+            var isSeller = !isOwner && usersMap[u.email] && usersMap[u.email].role === "seller";
+            var roleClass = isOwner ? "owner" : (isSeller ? "seller" : "customer");
+            var roleLabel = isOwner ? "Owner" : (isSeller ? "Seller" : "Customer");
+
+            return '<div class="user-card">' +
+                avatarHtml +
+                '<div class="user-card-info">' +
+                    '<div class="user-card-name">' + escapeHtml(name) + '</div>' +
+                    (u.username ? '<div class="user-card-username">' + escapeHtml(u.username) + '</div>' : '') +
+                    (u.email ? '<div class="user-card-meta">' + escapeHtml(u.email) + '</div>' : '') +
+                '</div>' +
+                '<div class="user-card-right">' +
+                    '<span class="user-role-badge role-' + roleClass + '">' + roleLabel + '</span>' +
+                '</div>' +
+            '</div>';
+        }).join("");
+    }
+
+    function starsHtmlOM(avg) {
+        var rounded = Math.round(avg);
+        var html = "";
+        for (var i = 1; i <= 5; i++) html += i <= rounded ? "★" : "☆";
+        return html;
+    }
+
+    function getAverageRatingOM(productId) {
+        var list = productReviews[productId] || [];
+        if (list.length === 0) return 0;
+        var sum = list.reduce(function (acc, r) { return acc + r.rating; }, 0);
+        return sum / list.length;
+    }
+
+    function toggleProductReviews(id) {
+        expandedProductIds[id] = !expandedProductIds[id];
+        var body = document.getElementById("prBody-" + id);
+        var toggle = document.getElementById("prToggle-" + id);
+        if (!body || !toggle) return;
+        body.classList.toggle("show", !!expandedProductIds[id]);
+        toggle.classList.toggle("open", !!expandedProductIds[id]);
+    }
+
+    function renderProducts() {
+        var listEl = document.getElementById("productsList");
+        var ids = Object.keys(products);
+
+        if (ids.length === 0) {
+            listEl.innerHTML = '<div class="empty-state">No products yet.</div>';
+            return;
+        }
+
+        listEl.innerHTML = ids.map(function (id) {
+            var p = products[id] || {};
+            var avg = getAverageRatingOM(id);
+            var ratingCount = (productReviews[id] || []).length;
+            var itemComments = (productComments[id] || []).slice().reverse();
+            var isExpanded = !!expandedProductIds[id];
+
+            var reviewsHtml = itemComments.length === 0
+                ? '<div class="product-reviews-empty">No reviews yet.</div>'
+                : itemComments.map(function (c) {
+                    var isAnon = !!c.anonymous;
+                    var displayName = isAnon ? "Anonymous" : (c.name || "Unknown");
+                    var initials = displayName.trim().charAt(0).toUpperCase() || "?";
+                    var avatarHtml = (c.avatar && !isAnon)
+                        ? '<img src="' + c.avatar + '" class="product-review-avatar-img" alt="">'
+                        : '<div class="product-review-avatar-initials">' + escapeHtml(initials) + '</div>';
+                    var starsRow = (typeof c.rating === "number")
+                        ? '<div class="product-review-stars">' + starsHtmlOM(c.rating) + '</div>'
+                        : '';
+                    var verifiedBadge = c.verified ? '<span class="product-review-verified">Verified Purchase</span>' : '';
+                    var photoHtml = c.photo
+                        ? '<img src="' + c.photo + '" class="product-review-photo" onclick="openImgOverlay(\'' + c.photo.replace(/'/g, "\\'") + '\')" alt="Review photo">'
+                        : '';
+
+                    return (
+                        '<div class="product-review-item">' +
+                            '<div class="product-review-head">' +
+                                '<div class="product-review-user">' +
+                                    avatarHtml +
+                                    '<span class="product-review-name">' + escapeHtml(displayName) + '</span>' +
+                                    verifiedBadge +
+                                '</div>' +
+                                '<span class="product-review-date">' + escapeHtml(c.date || "") + '</span>' +
+                            '</div>' +
+                            starsRow +
+                            (c.comment ? '<p class="product-review-comment">' + escapeHtml(c.comment) + '</p>' : '') +
+                            photoHtml +
+                        '</div>'
+                    );
+                }).join("");
+
+            var ratingText = ratingCount === 0
+                ? "No ratings yet"
+                : avg.toFixed(1) + " (" + ratingCount + (ratingCount === 1 ? " rating" : " ratings") + ")";
+
+            return (
+                '<div class="product-card">' +
+                    '<div class="product-card-head">' +
+                        (p.image ? '<img src="' + p.image + '" class="product-card-img" alt="">' : '<div class="product-card-img"></div>') +
+                        '<div class="product-card-info">' +
+                            '<div class="product-card-name">' + escapeHtml(p.name || id) + '</div>' +
+                            '<div class="product-card-meta">₱' + Number(p.price || 0).toFixed(2) + ' &middot; Stock: ' + (typeof p.stock === "number" ? p.stock : "—") + '</div>' +
+                            '<div class="product-card-rating">' + starsHtmlOM(avg) + ' <span>' + ratingText + '</span></div>' +
+                        '</div>' +
+                    '</div>' +
+                    '<div class="product-card-reviews-toggle' + (isExpanded ? ' open' : '') + '" id="prToggle-' + id + '" onclick="toggleProductReviews(\'' + id + '\')">' +
+                        '<span>Reviews (' + itemComments.length + ')</span>' +
+                        '<span class="product-card-reviews-arrow">&#9662;</span>' +
+                    '</div>' +
+                    '<div class="product-card-reviews-body' + (isExpanded ? ' show' : '') + '" id="prBody-' + id + '">' + reviewsHtml + '</div>' +
+                '</div>'
+            );
+        }).join("");
+    }
+
+    function openImgOverlay(src) {
+        document.getElementById("imgOverlayImg").src = src;
+        document.getElementById("imgOverlay").classList.add("show");
+    }
+
+    var REFUND_STATUS_LABEL = { pending: "Pending Approval", approved: "Returning", completed: "Success Return" };
+
+    function renderRefunds() {
+        var listEl = document.getElementById("refundsList");
+        var refundOrders = orders.filter(function (o) { return !!o.refundStatus; });
+        refundOrders = refundOrders.slice().reverse();
+
+        if (refundOrders.length === 0) {
+            listEl.innerHTML = '<div class="empty-state">No refund requests.</div>';
+            return;
+        }
+
+        listEl.innerHTML = refundOrders.map(function (o) {
+            var r = o.refundRequest || {};
+            var statusLabel = REFUND_STATUS_LABEL[o.refundStatus] || o.refundStatus;
+
+            var roleLine = r.role === "Student"
+                ? escapeHtml(r.role) + " &middot; " + escapeHtml(r.yearLevel || "") + " &middot; " + escapeHtml(r.section || "")
+                : escapeHtml(r.role || "");
+
+            var paymentLines = '<div class="refund-detail-row"><strong>Payment Method:</strong> ' + escapeHtml(r.paymentMethod || "") + '</div>' +
+                '<div class="refund-detail-row"><strong>Account Name:</strong> ' + escapeHtml(r.accountName || "") + '</div>' +
+                '<div class="refund-detail-row"><strong>Account Number:</strong> ' + escapeHtml(r.accountNumber || "") + '</div>';
+
+            var photoHtml = r.photo
+                ? '<img src="' + r.photo + '" class="product-review-photo" onclick="openImgOverlay(\'' + r.photo.replace(/'/g, "\\'") + '\')" alt="Refund photo">'
+                : '';
+
+            var actionHtml = "";
+            if (o.refundStatus === "pending") {
+                actionHtml = '<button type="button" class="btn-approve-refund" onclick="approveRefund(\'' + o.id + '\')">APPROVE</button>';
+            } else if (o.refundStatus === "approved") {
+                actionHtml = '<button type="button" class="btn-complete-refund" onclick="completeRefund(\'' + o.id + '\')">Success Return</button>';
+            }
+
+            return (
+                '<div class="product-card">' +
+                    '<div class="refund-card-head">' +
+                        '<div>' +
+                            '<div class="product-card-name">' + escapeHtml(o.buyerName || o.buyerEmail || "") + '</div>' +
+                            '<div class="product-card-meta">' + escapeHtml(orderSummaryText(o)) + ' &middot; &#8369;' + Number(o.total || 0).toFixed(2) + '</div>' +
+                        '</div>' +
+                        '<span class="refund-status-badge refund-status-' + o.refundStatus + '">' + escapeHtml(statusLabel) + '</span>' +
+                    '</div>' +
+
+                    '<div class="refund-detail-row"><strong>Full Name:</strong> ' + escapeHtml(r.fullName || "") + '</div>' +
+                    '<div class="refund-detail-row"><strong>Address:</strong> ' + escapeHtml(r.address || "") + '</div>' +
+                    '<div class="refund-detail-row"><strong>I am:</strong> ' + roleLine + '</div>' +
+                    paymentLines +
+                    '<div class="refund-detail-row"><strong>Reason:</strong> ' + escapeHtml(r.reason || "") + '</div>' +
+                    photoHtml +
+                    '<div class="refund-detail-row refund-submitted-at">Submitted ' + escapeHtml(r.submittedAt || "") + '</div>' +
+
+                    (actionHtml ? '<div class="refund-card-actions">' + actionHtml + '</div>' : '') +
+                '</div>'
+            );
+        }).join("");
+    }
+
+    function approveRefund(orderId) {
+        var order = orders.find(function (o) { return o.id === orderId; });
+        if (!order) return;
+
+        order.refundStatus = "approved";
+        order.buyerUnread = (order.buyerUnread || 0) + 1;
+        saveOrders();
+        renderRefunds();
+    }
+
+    function completeRefund(orderId) {
+        var order = orders.find(function (o) { return o.id === orderId; });
+        if (!order) return;
+
+        order.refundStatus = "completed";
+        order.buyerUnread = (order.buyerUnread || 0) + 1;
+        saveOrders();
+        adjustStockForItems(order.items, 1);
+        renderRefunds();
+    }
+
+    function closeImgOverlay() {
+        document.getElementById("imgOverlay").classList.remove("show");
+    }
+
+    function saveOrders() {
+        db.collection("athletica").doc("orders").set({ list: orders }).catch(function (err) {
+            console.error("Failed to save orders", err);
+            showToast("Failed to save — check connection and try again.");
+        });
+    }
+
+    function adjustStockForItems(items, direction) {
+        if (!items || items.length === 0) return;
+        var changed = false;
+        items.forEach(function (item) {
+            var product = products[item.id];
+            if (!product || typeof product.stock !== "number") return;
+            product.stock = Math.max(0, product.stock + (direction * item.qty));
+            changed = true;
+        });
+        if (changed) {
+            db.collection("athletica").doc("products").set({ map: products });
+        }
+    }
+
+    function approveOrder(orderId) {
+        var order = orders.find(function (o) { return o.id === orderId; });
+        if (!order || order.status !== "pending") return;
+
+        order.status = "confirmed";
+        order.buyerUnread = (order.buyerUnread || 0) + 1;
+        saveOrders();
+        showToast("Order approved.");
+    }
+
+    function declineOrder(orderId) {
+        var order = orders.find(function (o) { return o.id === orderId; });
+        if (!order || order.status !== "pending") return;
+        if (!confirm("Decline this order? Stock will be returned.")) return;
+
+        order.status = "cancelled";
+        order.buyerUnread = (order.buyerUnread || 0) + 1;
+        saveOrders();
+        adjustStockForItems(order.items, 1);
+        showToast("Order declined.");
+    }
+
+    function cancelOrder(orderId) {
+        var order = orders.find(function (o) { return o.id === orderId; });
+        if (!order || order.status !== "confirmed") return;
+        if (!confirm("Cancel this already-confirmed order? Stock will be returned.")) return;
+
+        order.status = "cancelled";
+        order.buyerUnread = (order.buyerUnread || 0) + 1;
+        saveOrders();
+        adjustStockForItems(order.items, 1);
+        showToast("Order cancelled.");
+    }
+
+    function markDelivered(orderId) {
+        var order = orders.find(function (o) { return o.id === orderId; });
+        if (!order || order.status !== "confirmed") return;
+
+        order.status = "delivered";
+        order.buyerUnread = (order.buyerUnread || 0) + 1;
+        saveOrders();
+        showToast("Order marked as delivered.");
+    }
+
+    function toggleOrderExpand(orderId) {
+        expandedOrderIds[orderId] = !expandedOrderIds[orderId];
+        renderOrders();
+    }
+
+    function statusLabel(status) {
+        if (status === "pending") return "Pending Approval";
+        if (status === "confirmed") return "Confirmed";
+        if (status === "delivered") return "Delivered";
+        return "Cancelled";
+    }
+
+    function renderOrders() {
+        var listEl = document.getElementById("orderList");
+
+        var visible = orders.slice().reverse();
+        if (currentFilter !== "all") {
+            visible = visible.filter(function (o) { return o.status === currentFilter; });
+        }
+
+        var pendingCount = orders.filter(function (o) { return o.status === "pending"; }).length;
+        document.title = (pendingCount > 0 ? "(" + pendingCount + ") " : "") + baseTitle;
+
+        if (visible.length === 0) {
+            listEl.innerHTML = '<div class="empty-state">No orders here.</div>';
+            return;
+        }
+
+        listEl.innerHTML = visible.map(function (o) {
+            var itemsText = orderSummaryText(o);
+            var isExpanded = !!expandedOrderIds[o.id];
+            var sellerNote = o.sellerEmail
+                ? '<div class="order-seller-note">Handled by: ' + escapeHtml(o.sellerName || "Seller") + '</div>'
+                : "";
+
+            var detailsHtml = "";
+            if (o.method === "COD") {
+                detailsHtml =
+                    '<div class="order-meta">' +
+                        '<strong>Address:</strong> ' + escapeHtml(o.details && o.details.address) + '<br>' +
+                        '<strong>Year Level:</strong> ' + escapeHtml(o.details && o.details.yearLevel) + '<br>' +
+                        '<strong>Section:</strong> ' + escapeHtml(o.details && o.details.section) + '<br>' +
+                        '<strong>Phone:</strong> ' + escapeHtml(o.details && o.details.phone) +
+                    '</div>';
+            } else if (o.details && o.details.paymentProof) {
+                detailsHtml =
+                    '<div class="order-meta"><strong>Payment Proof:</strong></div>' +
+                    '<img src="' + o.details.paymentProof + '" class="proof-img" onclick="openImgOverlay(\'' + o.details.paymentProof.replace(/'/g, "\\'") + '\')" alt="Payment proof">';
+            }
+
+            var actionsHtml = "";
+            if (o.status === "pending") {
+                actionsHtml =
+                    '<div class="order-actions">' +
+                        '<button type="button" class="btn-approve" onclick="approveOrder(\'' + o.id + '\')">Approve</button>' +
+                        '<button type="button" class="btn-decline" onclick="declineOrder(\'' + o.id + '\')">Decline</button>' +
+                    '</div>';
+            } else if (o.status === "confirmed") {
+                actionsHtml =
+                    '<div class="order-actions">' +
+                        '<button type="button" class="btn-deliver" onclick="markDelivered(\'' + o.id + '\')">Mark as Delivered</button>' +
+                        '<button type="button" class="btn-cancel" onclick="cancelOrder(\'' + o.id + '\')">Cancel</button>' +
+                    '</div>';
+            }
+
+            var headerTitle = 'ORDER: "' + escapeHtml(o.buyerName || "") + ' — ' + escapeHtml(itemsText) + '"';
+
+            var bodyHtml = "";
+            if (isExpanded) {
+                bodyHtml =
+                    '<div class="order-body">' +
+                        '<div class="order-body-buyer"><strong>Buyer:</strong> ' + escapeHtml(o.buyerName) + ' (' + escapeHtml(o.buyerEmail) + ')</div>' +
+                        '<div class="order-items">' + escapeHtml(itemsText) + '</div>' +
+                        '<div class="order-meta">' +
+                            '<strong>Total:</strong> ₱' + Number(o.total || 0).toFixed(2) + '<br>' +
+                            '<strong>Payment Method:</strong> ' + escapeHtml(o.method) + '<br>' +
+                            '<strong>Date:</strong> ' + escapeHtml(o.date) +
+                        '</div>' +
+                        sellerNote +
+                        detailsHtml +
+                        actionsHtml +
+                    '</div>';
+            }
+
+            return (
+                '<div class="order-card status-' + o.status + '">' +
+                    '<div class="order-header" onclick="toggleOrderExpand(\'' + o.id + '\')">' +
+                        '<div class="order-header-left">' +
+                            '<span class="order-toggle-arrow">' + (isExpanded ? "▲" : "▼") + '</span>' +
+                            '<span class="order-header-title">' + headerTitle + '</span>' +
+                        '</div>' +
+                        '<span class="order-status-badge status-' + o.status + '">' + statusLabel(o.status) + '</span>' +
+                    '</div>' +
+                    bodyHtml +
+                '</div>'
+            );
+        }).join("");
+    }
+
+    db.collection("athletica").doc("orders").onSnapshot(function (doc) {
+        orders = (doc.exists && doc.data().list) ? doc.data().list : [];
+        document.getElementById("connStatus").textContent = "Live";
+        document.getElementById("connStatus").classList.add("online");
+        renderOrders();
+        if (currentView === "refunds") renderRefunds();
+    }, function (err) {
+        console.error("orders sync error", err);
+        document.getElementById("connStatus").textContent = "Connection error";
+    });
+
+    db.collection("athletica").doc("products").onSnapshot(function (doc) {
+        products = (doc.exists && doc.data().map) ? doc.data().map : {};
+        if (currentView === "products") renderProducts();
+    }, function (err) { console.error("products sync error", err); });
+
+    db.collection("athletica").doc("reviews").onSnapshot(function (doc) {
+        productReviews = (doc.exists && doc.data().map) ? doc.data().map : {};
+        if (currentView === "products") renderProducts();
+    }, function (err) { console.error("reviews sync error", err); });
+
+    db.collection("athletica").doc("comments").onSnapshot(function (doc) {
+        productComments = (doc.exists && doc.data().map) ? doc.data().map : {};
+        if (currentView === "products") renderProducts();
+    }, function (err) { console.error("comments sync error", err); });
+
+    // Read-only view of the shop's actual customer accounts (index.html's
+    // athletica/users doc, shape { list: [...] }). This is also the source
+    // of login credentials for this panel now — see handleLogin() below.
+    // Never write to this collection from here.
+    db.collection("athletica").doc("users").onSnapshot(function (doc) {
+        siteUsers = (doc.exists && doc.data().list) ? doc.data().list : [];
+        _siteUsersReady = true;
+        restoreSession();
+        if (currentUser && currentUser.role === "owner" && currentView === "users") renderUsers();
+    }, function (err) { console.error("site users sync error", err); });
+
+    // ---- Auth logic ----
+
+    function saveUsers() { USERS_DOC.set({ map: usersMap }); }
+    function saveReferrals() { REFERRALS_DOC.set({ list: referrals }); }
+
+    var _usersMapReady = false;
+    var _siteUsersReady = false;
+
+    USERS_DOC.onSnapshot(function (doc) {
+        usersMap = (doc.exists && doc.data().map) ? doc.data().map : {};
+        _usersMapReady = true;
+        restoreSession();
+        if (currentUser && currentUser.role === "owner" && currentView === "users") renderUsers();
+    }, function (err) { console.error("users sync error", err); });
+
+    REFERRALS_DOC.onSnapshot(function (doc) {
+        referrals = (doc.exists && doc.data().list) ? doc.data().list : [];
+        if (currentUser && currentUser.role === "owner") renderReferrals();
+    }, function (err) { console.error("referrals sync error", err); });
+
+    function togglePasswordVisibility(inputId, btnEl) {
+        var input = document.getElementById(inputId);
+        var isVisible = input.type === "text";
+        input.type = isVisible ? "password" : "text";
+        btnEl.classList.toggle("is-visible", !isVisible);
+        btnEl.setAttribute("aria-label", isVisible ? "Show password" : "Hide password");
+    }
+
+    function findSiteUser(usernameOrEmail) {
+        var q = (usernameOrEmail || "").trim().toLowerCase();
+        if (!q) return null;
+        var stripped = q.charAt(0) === "@" ? q : "@" + q;
+        for (var i = 0; i < siteUsers.length; i++) {
+            var u = siteUsers[i];
+            var uEmail = (u.email || "").toLowerCase();
+            var uUsername = (u.username || "").toLowerCase();
+            if (uEmail === q || uUsername === q || uUsername === stripped) return u;
+        }
+        return null;
+    }
+
+    function showReferralStep(siteUser) {
+        pendingSiteUser = siteUser;
+        document.getElementById("loginForm").style.display = "none";
+        document.getElementById("referralForm").style.display = "flex";
+        document.getElementById("backToShopLink").style.display = "none";
+        document.getElementById("authSubtitle").textContent =
+            "Hi " + (siteUser.name || siteUser.username || siteUser.email) + "! Enter your seller referral code to continue.";
+        document.getElementById("referralError").textContent = "";
+        document.getElementById("referralCodeInput").focus();
+    }
+
+    function cancelReferralStep() {
+        pendingSiteUser = null;
+        document.getElementById("referralForm").reset();
+        document.getElementById("referralForm").style.display = "none";
+        document.getElementById("loginForm").style.display = "flex";
+        document.getElementById("backToShopLink").style.display = "block";
+        document.getElementById("authSubtitle").textContent = "Log in with your Athletica account.";
+        document.getElementById("loginError").textContent = "";
+    }
+
+    function handleLogin(e) {
+        e.preventDefault();
+        var input = document.getElementById("loginUsername").value;
+        var p = document.getElementById("loginPassword").value;
+        var errEl = document.getElementById("loginError");
+        errEl.textContent = "";
+
+        var siteUser = findSiteUser(input);
+        if (!siteUser || siteUser.password !== p) {
+            errEl.textContent = "Invalid username/email or password.";
+            return false;
+        }
+
+        if (siteUser.isOwner || siteUser.email === OWNER_EMAIL) {
+            loginAs(siteUser, "owner");
+            return false;
+        }
+
+        var record = usersMap[siteUser.email];
+        if (record && record.role) {
+            loginAs(siteUser, record.role);
+            return false;
+        }
+
+        // Recognized shop account, but not registered as a seller in this
+        // panel yet — ask for the referral code before letting them in.
+        showReferralStep(siteUser);
+        return false;
+    }
+
+    function handleReferralSubmit(e) {
+        e.preventDefault();
+        var errEl = document.getElementById("referralError");
+        var code = document.getElementById("referralCodeInput").value.trim().toUpperCase();
+
+        if (!pendingSiteUser) {
+            errEl.textContent = "Session expired, please log in again.";
+            cancelReferralStep();
+            return false;
+        }
+
+        var ref = referrals.find(function (r) { return r.code === code; });
+        if (!ref) {
+            errEl.textContent = "Invalid referral code.";
+            return false;
+        }
+        if (ref.used) {
+            errEl.textContent = "This referral code has already been used.";
+            return false;
+        }
+
+        ref.used = true;
+        ref.usedBy = pendingSiteUser.username || pendingSiteUser.email;
+        ref.usedByEmail = pendingSiteUser.email;
+        ref.usedAt = Date.now();
+        saveReferrals();
+
+        usersMap[pendingSiteUser.email] = {
+            role: "seller",
+            name: pendingSiteUser.name || pendingSiteUser.username || pendingSiteUser.email,
+            username: pendingSiteUser.username || "",
+            referralCode: code,
+            createdAt: Date.now()
+        };
+        saveUsers();
+
+        var siteUser = pendingSiteUser;
+        pendingSiteUser = null;
+        loginAs(siteUser, "seller");
+        return false;
+    }
+
+    function loginAs(siteUser, role) {
+        currentUser = {
+            email: siteUser.email,
+            username: siteUser.username || "",
+            name: siteUser.name || siteUser.username || siteUser.email,
+            role: role
+        };
+        localStorage.setItem("athletica_session", JSON.stringify({ email: siteUser.email }));
+        showApp();
+    }
+
+    function restoreSession() {
+        if (currentUser) return; // already logged in this session
+        if (!_usersMapReady || !_siteUsersReady) return; // wait for both sources
+        var raw = localStorage.getItem("athletica_session");
+        if (!raw) return;
+        try {
+            var saved = JSON.parse(raw);
+            var siteUser = siteUsers.find(function (u) { return u.email === saved.email; });
+            if (!siteUser) {
+                localStorage.removeItem("athletica_session");
+                return;
+            }
+            if (siteUser.isOwner || siteUser.email === OWNER_EMAIL) {
+                currentUser = { email: siteUser.email, username: siteUser.username || "", name: siteUser.name || siteUser.email, role: "owner" };
+                showApp();
+                return;
+            }
+            var record = usersMap[siteUser.email];
+            if (record && record.role) {
+                currentUser = { email: siteUser.email, username: siteUser.username || "", name: record.name || siteUser.name || siteUser.email, role: record.role };
+                showApp();
+            } else {
+                localStorage.removeItem("athletica_session");
+            }
+        } catch (e) {
+            localStorage.removeItem("athletica_session");
+        }
+    }
+
+    function logout() {
+        currentUser = null;
+        localStorage.removeItem("athletica_session");
+        document.getElementById("appRoot").style.display = "none";
+        document.getElementById("authOverlay").classList.remove("hidden");
+        document.getElementById("loginForm").reset();
+        cancelReferralStep();
+    }
+
+    function showApp() {
+        document.getElementById("authOverlay").classList.add("hidden");
+        document.getElementById("appRoot").style.display = "block";
+        document.getElementById("userChip").textContent = currentUser.name + " (" + currentUser.role + ")";
+        document.getElementById("referralsBtn").style.display = currentUser.role === "owner" ? "inline-block" : "none";
+        document.getElementById("usersTabBtn").style.display = currentUser.role === "owner" ? "inline-block" : "none";
+        if (currentUser.role !== "owner" && currentView === "users") setView("orders");
+        renderOrders();
+    }
+
+    // ---- Referral generation (owner only) ----
+
+    function genReferralCode() {
+        var chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+        var code = "";
+        for (var i = 0; i < 7; i++) code += chars.charAt(Math.floor(Math.random() * chars.length));
+        return code;
+    }
+
+    function generateReferral() {
+        if (!currentUser || currentUser.role !== "owner") return;
+        var code = genReferralCode();
+        while (referrals.some(function (r) { return r.code === code; })) code = genReferralCode();
+
+        referrals.push({
+            code: code,
+            createdBy: currentUser.username,
+            createdAt: Date.now(),
+            used: false,
+            usedBy: null,
+            usedAt: null
+        });
+        saveReferrals();
+        showToast("Referral generated: " + code);
+    }
+
+    function removeReferral(code) {
+        if (!currentUser || currentUser.role !== "owner") return;
+
+        var ref = referrals.find(function (r) { return r.code === code; });
+        if (!ref) return;
+
+        var confirmMsg = ref.used
+            ? "This referral code was used by " + ref.usedBy + ". Removing it will also revoke that seller's panel access. Continue?"
+            : "Remove this referral code?";
+        if (!confirm(confirmMsg)) return;
+
+        var usedByEmail = ref.usedByEmail || ref.usedBy;
+        if (ref.used && usedByEmail && usersMap[usedByEmail]) {
+            delete usersMap[usedByEmail];
+            saveUsers();
+
+            if (currentUser.email === usedByEmail) {
+                logout();
+            }
+        }
+
+        referrals = referrals.filter(function (r) { return r.code !== code; });
+        saveReferrals();
+        renderReferrals();
+        showToast("Referral removed.");
+    }
+
+    function openReferralModal() {
+        if (!currentUser || currentUser.role !== "owner") return;
+        document.getElementById("referralModal").classList.add("show");
+        renderReferrals();
+    }
+
+    function closeReferralModal() {
+        document.getElementById("referralModal").classList.remove("show");
+    }
+
+    function renderReferrals() {
+        var el = document.getElementById("referralList");
+        if (!el) return;
+
+        if (referrals.length === 0) {
+            el.innerHTML = '<div class="empty-state">No referral codes yet.</div>';
+            return;
+        }
+
+        el.innerHTML = referrals.slice().reverse().map(function (r) {
+            return '<div class="referral-item">' +
+                '<span class="referral-code">' + escapeHtml(r.code) + '</span>' +
+                '<span class="referral-item-right">' +
+                    '<span class="referral-status ' + (r.used ? "used" : "unused") + '">' +
+                        (r.used ? "Used by " + escapeHtml(r.usedBy) : "Unused") +
+                    '</span>' +
+                    '<button type="button" class="btn-remove-referral" onclick="removeReferral(\'' + r.code + '\')">Remove</button>' +
+                '</span>' +
+            '</div>';
+        }).join("");
+    }
+</script>
+
+</body>
+</html>
